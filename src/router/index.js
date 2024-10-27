@@ -1,8 +1,8 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { updateMetaTags } from '../utils/seo'
 
 const router = createRouter({
-  history: createWebHistory('/YuanYeYouTao.github.io/'), // 修改这里，添加基础路径
+  history: createWebHashHistory(), // 使用 hash 模式
   routes: [
     {
       path: '/',
