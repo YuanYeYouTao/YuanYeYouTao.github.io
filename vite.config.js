@@ -9,10 +9,8 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
-  base: '/YuanYeYouTao.github.io/', // 修改这里，使用仓库名作为基础路径
+  base: '/YuanYeYouTao.github.io/', // 修改这里
   build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: true
+    outDir: 'dist'
   }
 })
