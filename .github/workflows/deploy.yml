@@ -11,7 +11,8 @@ jobs:
     permissions:
       contents: write  # 添加这个权限
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -24,9 +25,9 @@ jobs:
       - name: Build
         run: npm run build
         
-      - name: Deploy to GitHub Pages
+      - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          cname: yuanyeyoutao.github.io  # 如果你有自定义域名，添加这行
+          force_orphan: true # 这会创建一个干净的 gh-pages 分支
