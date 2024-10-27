@@ -65,8 +65,9 @@ onMounted(() => {
   background-color: var(--bg-color);
   padding: 0.2em 0.4em;
   border-radius: 3px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: 'Consolas', 'Courier New', monospace;
   color: var(--accent-color);
+  text-shadow: none;
 }
 
 .markdown-body pre {
@@ -74,6 +75,14 @@ onMounted(() => {
   padding: 1em;
   border-radius: 0.5rem;
   overflow-x: auto;
+}
+
+.markdown-body pre code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  text-shadow: none;
+  color: var(--text-color);
+  background-color: transparent;
+  padding: 0;
 }
 
 .markdown-body img {
@@ -88,5 +97,9 @@ onMounted(() => {
 
 .markdown-body a:hover {
   text-decoration: underline;
+}
+
+.token {
+  background: transparent !important;
 }
 </style>
