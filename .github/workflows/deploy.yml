@@ -3,16 +3,18 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - main  # 确保这里是你的主分支名称
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 添加这个权限
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
           
@@ -27,4 +29,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-
+          cname: yuanyeyoutao.github.io  # 如果你有自定义域名，添加这行

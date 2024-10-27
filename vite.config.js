@@ -9,7 +9,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
-  base: '/',
+  base: '/YuanYeYouTao.github.io/', // 修改这一行
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
