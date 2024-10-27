@@ -6,8 +6,8 @@ const projects = ref([
     id: 1,
     title: '个人博客',
     description: '使用 Vue 3 + Vite 构建的个人博客网站',
-    imageUrl: '/project-1.jpg',
-    githubUrl: 'https://github.com/YuanYeYouTao/blog',
+    imageUrl: 'public/images/projects/project-1.jpg',
+    githubUrl: 'https://github.com/YuanYeYouTao/YuanYeYouTao.github.io',
     demoUrl: 'https://yuanyeyoutao.github.io',
     tags: ['Vue', 'JavaScript', 'CSS']
   },
