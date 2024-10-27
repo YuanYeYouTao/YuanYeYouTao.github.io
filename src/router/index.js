@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { updateMetaTags } from '../utils/seo'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/YuanYeYouTao.github.io/'), // 修改这里，添加基础路径
   routes: [
     {
       path: '/',
