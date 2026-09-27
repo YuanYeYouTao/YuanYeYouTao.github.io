@@ -140,6 +140,6 @@ lim U_self = -0.05 < 0
 - **WebUI**：3.8.0 已經把管理功能收斂到一個與傳輸方式無關的 Control Plane，就差一個前端。
 - **自主參與的真實驗收**：合成資料上的回放只能證明機制是對的，接下來要看它在真實群聊裡是不是真的「像個成員」。
 
-最後謝謝一起提交過程式碼的 xxxintianyang、小尤和 Hilbert-beinghappy（坤坤遊戲外掛就來自 Hilbert-beinghappy），也謝謝每一個在群裡被 Yuki 打擾過的人。
+最後謝謝一起提交過程式碼的小尤和 Hilbert-beinghappy（坤坤遊戲外掛就來自 Hilbert-beinghappy），也謝謝每一個在群裡被 Yuki 打擾過的人。
 
 有興趣的話歡迎到 [GitHub](https://github.com/YuanYeYouTao/Yuki) 看看、開 issue 或給顆星。
