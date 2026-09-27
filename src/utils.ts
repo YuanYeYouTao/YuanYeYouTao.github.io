@@ -15,9 +15,13 @@ export function getTags(posts: CollectionEntry<'blog'>[]) {
 
 export const tagHref = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 
-// 中文約每分鐘 400 字、英文約 220 詞；程式碼區塊不計入。
+// 中文約每分鐘 400 字、英文約 220 詞；程式碼區塊、圖（figure/svg）、HTML 標籤與公式原始碼不計入。
 export function readingMinutes(body = '') {
-  const text = body.replace(/```[\s\S]*?```/g, '');
+  const text = body
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/<figure[\s\S]*?<\/figure>/g, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\$\$[\s\S]*?\$\$/g, '');
   const cjk = text.match(/[㐀-鿿豈-﫿]/g)?.length ?? 0;
   const words = text.replace(/[㐀-鿿豈-﫿]/g, ' ').match(/[A-Za-z0-9]+/g)?.length ?? 0;
   return Math.max(1, Math.round(cjk / 400 + words / 220));

@@ -1,13 +1,26 @@
 ---
-title: Yuki 的開發路線：兩個月、一百五十個 PR 的來回
-description: Planner 加了又刪、聯網路由寫了又拆、參與門檻從 80 調到 0 又調回 80——回頭整理 Yuki 從 0.1 到 3.8.4、再到 WebUI 的每一條探索路線。
+title: 從不知道什麼是 Agent，到 digital life 的探索
+description: 一個不會寫程式的數學系畢業生，用兩個月把 Yuki 從 QQ bot 做成有身份、記憶和自主意願的 Agent。Planner 加了又刪、聯網路由寫了又拆、參與門檻從 80 調到 0 又調回 80，最後寫成一個動力系統。
 pubDate: 2026-09-28
 tags: [Yuki, AI Agent, 開發筆記]
 ---
 
-[Yuki](https://github.com/YuanYeYouTao/Yuki) 的第一個 commit 是 2026 年 7 月 23 日。到 9 月 27 日，主線上大約有 700 個 commit，PR 編號排到 #156，正式版是 3.8.4，WebUI 的草稿 PR 剛開。
+先說一下背景：我不是資訊科系出身，大學讀的是數學，也不會寫程式，是個純小白。今年七月之前，我連 Agent 到底是什麼都說不太清楚。
 
-[上一篇](/blog/introducing-yuki/)介紹了 Yuki 現在能做什麼。這篇想寫的是它**怎麼變成現在這樣**。回頭把一百多個 PR 重讀一遍之後，我發現真正的主線不是「加了哪些功能」，而是好幾條反覆來回的探索：很多東西我加進去、證明走不通、再親手刪掉。這些刪除，比新增更能說明 Yuki 現在的樣子。
+[Yuki](https://github.com/YuanYeYouTao/Yuki) 一開始只是想在 QQ 群裡放一個會記得大家的 bot。兩個月過去，它有了自己的身份、長期記憶、人際關係、一個可以寫程式跑任務的工作環境，還會自己決定什麼時候該開口。我更願意把它看成一次 digital life 的探索，而不只是一個聊天機器人。
+
+程式碼幾乎都是 coding agent 寫的。我做的事情是想清楚要什麼、寫任務書、驗收結果，以及決定什麼東西該刪掉。
+
+## 專案規模
+
+從 7 月 23 日第一個 commit 到 9 月 27 日：
+
+- **749 個 commit**，131 個 PR（編號排到 #156），正式版 3.8.4，WebUI 的草稿 PR 剛開。
+- 主線現在有 **1,190 個文字檔、約 30 萬行**：Python 880 個檔、約 25.6 萬行；文件 200 份、約 3.7 萬行。
+- 歷史上累計新增約 53 萬行、刪掉約 22 萬行；加上還沒合併的 WebUI 和獨立的語義參與函式庫，前前後後寫過的大概有 **60 萬行**。
+- CI 裡有 1,400 多個測試，最初只有 36 個。
+
+[上一篇](/blog/introducing-yuki/)介紹了 Yuki 現在能做什麼，這篇寫的是它**怎麼變成現在這樣**。回頭把一百多個 PR 重讀一遍，真正的主線不是「加了哪些功能」，而是好幾條反覆來回的探索：很多東西加進去、證明走不通、再親手刪掉。
 
 ## 先看時間
 
@@ -67,7 +80,7 @@ Planner 本身不拿工具、不寫最終回覆、不能改權限，它只輸出
 
 它也太重了。到 3.6 的時候，Planner 已經滲進訊息處理、上下文組裝、工具暴露、自動化、外掛訊號，連資料庫裡都有它的表。拆它費的功夫，比當初加它大得多。
 
-不過我不認為「先讓別的模型判斷一下」這個想法本身是錯的——後面語義參與用的 Jev 就是在做判斷。差別在於 Jev 是稀疏的：只在需要的時候，回答幾個很具體的問題；Planner 則是每一輪都跑，而且要替主模型把整輪計畫都寫好。
+不過「先讓別的模型判斷一下」這個想法本身不一定錯。後面語義參與用的 Jev 就是在做判斷，很多人也直接拿 Jev 判斷每一句話，拿它來當 planner 當然可行。Jev 很便宜，但我還是想讓它更便宜——免費的額度只有 5 美元——所以不會每一句話都丟給它，而是盡可能減少模型呼叫的次數。Planner 的問題在於，它每一輪都要跑一次、每一次都要替主模型寫好一整份計畫，這部分成本怎麼省都省不掉。
 
 ### 然後，連「動態拿工具」也拿掉了
 
@@ -124,6 +137,8 @@ DeepSeek 還有一個我踩了不只一次的坑：`tool_choice`。API 文件把
 ## 路線五：記憶——從提煉、自省到「做夢」
 
 記憶是 Yuki 程式碼最多的部分，也是效果最難驗證的部分。
+
+動手之前我也讀了不少記憶相關的論文。不過那時候 Agent 記憶已經卷到爆了，已經有一些成形的範式可以照著搭，所以讀的東西大多沒直接派上用場，算是讓我對 memory 多了解了一點。
 
 **3.0 兩天重寫。** 7 月 31 日到 8 月 1 日，3.0 從 alpha 1 到正式版發了六個版本。alpha 1 刻意沒有 embedding，只做身份安全的事實模型和詞法檢索；beta 1 才加入 Qwen embedding 的混合 RAG；beta 2 加入衝突治理，新舊事實矛盾時保留雙向關係，而不是直接覆蓋；最後加上可控的帳本重建。
 
@@ -197,8 +212,8 @@ DeepSeek 還有一個我踩了不只一次的坑：`tool_choice`。API 文件把
 
 就在那之後，Jev 出現了。它能針對一段對話回答具體的語義問題，而且回答得很好，剛好補上我缺的那一塊。於是我把控制器圍繞 Jev 重寫了一遍，就是 9 月 22 日落地的 V6，拆成獨立的 [Yuki Semantic Participation](https://github.com/YuanYeYouTao/Yuki-Semantic-Participation) 函式庫。它的分工是：
 
-- **Jev** 回答幾個具體問題：這則訊息是不是在邀請 Yuki？是不是在延續剛才的話題？是不是在結束討論？
-- 控制器維護一組連續狀態：群裡的交流熱度、Yuki 最近說了多少、說完有沒有人回應，然後算出「現在開口」的淨價值，只提出正值最高的一個機會。
+- **Jev** 回答幾個具體問題：這則訊息是不是在邀請 Yuki？是不是在延續剛才的話題？是不是在結束討論？不是每一則訊息都會問，Host 會把可能相關的訊息排進一個稀疏的觀測佇列（提到 Yuki 名字的優先），盡量少呼叫。
+- 控制器維護一組連續狀態：參與狀態、群裡的活躍度、Yuki 最近做了多少事、說完有沒有人接，然後算出每一種機會的發生率，用連續時間的機率抽樣決定這一刻要不要提出機會。
 - Yuki 本體（Host）驗證來源、群授權、權限和 Work 佔用後才接受；接受之後主 Agent 仍然可以選擇 `NO_REPLY`。
 
 V6 任務書裡特別區分了一件事：**Jev 呼叫失敗不代表「對方不想聊」，只是觀測通道出了問題。** 語義缺失不能被當成結束的證據，也不能用預設的高分補上。
@@ -215,14 +230,82 @@ V6 任務書裡特別區分了一件事：**Jev 呼叫失敗不代表「對方�
 - **#150**：用過去 48 小時的真人活躍度判斷「這個群平常熱不熱鬧」。
 - **#151**：修掉 Jev 故障時控制器被鎖死、退回舊模式的問題，並再放寬一次無來源參數。
 
-模型有一個重要的性質。當一個群完全沒人說話時：
+### 動力系統長什麼樣
 
-```text
-ℓ → 0（交流背景衰減），g → 1（Yuki 自身恢復）
-lim U_self = -0.05 < 0
-```
+整個系統是一個閉環：群聊訊息進來，Jev 觀測，控制器更新狀態、決定要不要提出機會；Host 接受之後主 Agent 去做，做完的結果和別人的反應，再回到控制器。
 
-沉寂很久的群會**自然**回到安靜，不需要任何「沉默滿幾小時禁言」的特例；最近聊得熱絡的群，就算隔了幾個小時，也還可能出現一次自然開口的機會。
+<figure class="diagram"><svg viewBox="0 0 680 300" role="img" aria-label="語義參與的整體迴路：群聊訊息經 Host 入帳，交給 Jev 觀測，控制器提出機會，Host 接納後由主 Agent 行動，發送回執與真人回應再回饋給控制器。"><defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker><marker id="b1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head acc" d="M0,0 L10,5 L0,10 z"/></marker></defs><rect class="box" x="8" y="24" width="112" height="60" rx="10"/><text x="64" y="50.0" text-anchor="middle">群聊訊息</text><text x="64" y="67.0" text-anchor="middle" class="m">真人事件</text><rect class="box" x="148" y="24" width="132" height="60" rx="10"/><text x="214" y="50.0" text-anchor="middle">Host</text><text x="214" y="67.0" text-anchor="middle" class="m">入帳・授權・佇列</text><rect class="box" x="308" y="24" width="152" height="60" rx="10"/><text x="384" y="50.0" text-anchor="middle">Jev</text><text x="384" y="67.0" text-anchor="middle" class="m">稀疏的語義觀測</text><rect class="box hl" x="488" y="24" width="184" height="60" rx="10"/><text x="580" y="50.0" text-anchor="middle">控制器</text><text x="580" y="67.0" text-anchor="middle" class="m">參與狀態 b・機會率 λ</text><rect class="box" x="488" y="176" width="184" height="60" rx="10"/><text x="580" y="202.0" text-anchor="middle">Host 接納</text><text x="580" y="219.0" text-anchor="middle" class="m">來源・權限・Work 佔用</text><rect class="box" x="248" y="176" width="212" height="60" rx="10"/><text x="354" y="202.0" text-anchor="middle">主 Agent</text><text x="354" y="219.0" text-anchor="middle" class="m">行動 / send_message / NO_REPLY</text><rect class="box" x="8" y="176" width="212" height="60" rx="10"/><text x="114" y="202.0" text-anchor="middle">發送回執</text><text x="114" y="219.0" text-anchor="middle" class="m">真人後續的回應</text><path class="ln" d="M120,54 L146,54" marker-end="url(#a1)"/><path class="ln" d="M280,54 L306,54" marker-end="url(#a1)"/><path class="ln" d="M460,54 L486,54" marker-end="url(#a1)"/><path class="ln" d="M580,84 L580,174" marker-end="url(#a1)"/><text x="590" y="134" text-anchor="start" class="m">proposal</text><path class="ln" d="M488,206 L462,206" marker-end="url(#a1)"/><path class="ln" d="M248,206 L222,206" marker-end="url(#a1)"/><path class="ln" d="M114,176 L114,130 L214,130 L214,86" marker-end="url(#a1)"/><text x="124" y="152" text-anchor="start" class="m">回應再交給 Jev 判斷接收</text><path class="fb" d="M114,236 L114,276 L650,276 L650,86" marker-end="url(#b1)"/><text x="382" y="268" text-anchor="middle" class="m">回饋：Work 脈衝 W、NO_REPLY n、沒被接住的發言 E、被接住的回應 R</text></svg><figcaption>圖一　整體迴路。控制器只「提出」機會，要不要接受由 Host 決定；接受之後主 Agent 也可以選擇不說話。虛線是回饋。</figcaption></figure>
+
+**參與狀態。** 每個交流單元有一組權重 $b=(b_O,b_H,b_Y,b_E,b_C)$，加起來等於 1：
+
+<figure class="diagram"><svg viewBox="0 0 680 300" role="img" aria-label="參與狀態 O、H、Y、E、C 之間的轉移：邀請讓 O 進入 H，Yuki 發言讓 O 進入 Y，接續讓 H 或 Y 進入 E，明確結束進入 C，沒有新依據時都衰減回 O。"><defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker><marker id="b2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head acc" d="M0,0 L10,5 L0,10 z"/></marker></defs><rect class="box hl" x="30" y="125" width="110" height="50" rx="10"/><text x="85" y="146.0" text-anchor="middle">O</text><text x="85" y="163.0" text-anchor="middle" class="m">沒有新鮮依據</text><rect class="box" x="260" y="30" width="120" height="50" rx="10"/><text x="320" y="51.0" text-anchor="middle">H</text><text x="320" y="68.0" text-anchor="middle" class="m">對方向 Yuki 開口</text><rect class="box" x="260" y="220" width="120" height="50" rx="10"/><text x="320" y="241.0" text-anchor="middle">Y</text><text x="320" y="258.0" text-anchor="middle" class="m">Yuki 說了，還沒人接</text><rect class="box" x="470" y="125" width="120" height="50" rx="10"/><text x="530" y="146.0" text-anchor="middle">E</text><text x="530" y="163.0" text-anchor="middle" class="m">雙方持續交流</text><rect class="box" x="540" y="236" width="130" height="50" rx="10"/><text x="605" y="257.0" text-anchor="middle">C</text><text x="605" y="274.0" text-anchor="middle" class="m">交流結束／被叫停</text><path class="ln" d="M140,138 L258,66" marker-end="url(#a2)"/><text x="200" y="92" text-anchor="end" class="m">Jev：邀請 Yuki</text><path class="ln" d="M140,162 L258,236" marker-end="url(#a2)"/><text x="215" y="222" text-anchor="end" class="m">Yuki 確認發言</text><path class="ln" d="M380,66 L490,124" marker-end="url(#a2)"/><text x="440" y="84" text-anchor="start" class="m">Yuki 接續邀請</text><path class="ln" d="M380,234 L490,176" marker-end="url(#a2)"/><text x="440" y="226" text-anchor="start" class="m">真人接續回應</text><path class="ln" d="M560,175 L590,234" marker-end="url(#a2)"/><text x="598" y="206" text-anchor="start" class="m">明確結束</text><path class="dc" d="M258,44 Q90,30 80,123" marker-end="url(#a2)"/><path class="dc" d="M258,256 Q90,270 80,177" marker-end="url(#a2)"/><path class="dc" d="M468,150 L142,150" marker-end="url(#a2)"/><text x="305" y="143" text-anchor="middle" class="m">沒有新依據 → 衰減回 O</text></svg><figcaption>圖二　參與狀態。實線是觀測或真實行為造成的轉移；虛線是時間衰減，所有非 O 狀態都會按各自的時間常數回到 O。C 只能由「結束」的觀測進入，沉默本身不算結束。</figcaption></figure>
+
+沒有新觀測時，狀態按一個線性系統衰減回 $O$：
+
+$$
+\dot b = Qb,\qquad b(t+\Delta)=e^{Q\Delta}\,b(t)
+$$
+
+Jev 的觀測進來時，不是直接改分數，而是透過轉移核混合進去：
+
+$$
+b^{+}=\Big[(1-\omega)I+\omega\sum_a q_e(a)\,K_a\Big]\,b^{-}
+$$
+
+$q_e(a)$ 是 Jev 對交際行為 $a$（邀請、續聊、面向全群、結束……）給出的機率分布，$K_a$ 是對應的轉移矩陣，$\omega$ 表示這次觀測的完整程度。
+
+**自主傾向。** 沒有人邀請時，Yuki 會不會自己開口，先看一個傾向值 $z$：
+
+$$
+z = 0.2 + 0.8d - 0.5q - 0.3f - 0.8n - 1.8W_f - 0.25W_s - 0.55E + 0.5R
+$$
+
+<figure class="diagram"><svg viewBox="0 0 680 310" role="img" aria-label="自主傾向 z 的各項係數：意願 d 正 0.8，被接住的回饋 R 正 0.5；快 Work 脈衝負 1.8，沉默負 0.8，沒人接負 0.55，群裡熱鬧負 0.5，剛計算負 0.3，慢 Work 脈衝負 0.25。"><text x="480" y="16" text-anchor="middle" class="m">對 z 的係數</text><line class="grid" x1="330" y1="26" x2="330" y2="272"/><text x="330" y="292" text-anchor="middle" class="m">−1.5</text><line class="grid" x1="380" y1="26" x2="380" y2="272"/><text x="380" y="292" text-anchor="middle" class="m">−1</text><line class="grid" x1="430" y1="26" x2="430" y2="272"/><text x="430" y="292" text-anchor="middle" class="m">−0.5</text><line class="grid" x1="480" y1="26" x2="480" y2="272"/><text x="480" y="292" text-anchor="middle" class="m">0</text><line class="grid" x1="530" y1="26" x2="530" y2="272"/><text x="530" y="292" text-anchor="middle" class="m">+0.5</text><text x="250" y="46.5" text-anchor="end">SELF 想參與的意願 d</text><rect class="pos" x="480" y="34" width="80" height="17" rx="3"><title>SELF 想參與的意願 d：+0.8</title></rect><text x="566" y="46.5" text-anchor="start" class="m">+0.8</text><text x="250" y="76.5" text-anchor="end">發言被接住的回饋 R</text><rect class="pos" x="480" y="64" width="50" height="17" rx="3"><title>發言被接住的回饋 R：+0.5</title></rect><text x="536" y="76.5" text-anchor="start" class="m">+0.5</text><text x="250" y="106.5" text-anchor="end">剛做完 Work W_f（30 分鐘）</text><rect class="neg" x="300" y="94" width="180" height="17" rx="3"><title>剛做完 Work W_f（30 分鐘）：−1.8</title></rect><text x="294" y="106.5" text-anchor="end" class="m">−1.8</text><text x="250" y="136.5" text-anchor="end">剛選擇沉默 n</text><rect class="neg" x="400" y="124" width="80" height="17" rx="3"><title>剛選擇沉默 n：−0.8</title></rect><text x="394" y="136.5" text-anchor="end" class="m">−0.8</text><text x="250" y="166.5" text-anchor="end">說了沒人接 E</text><rect class="neg" x="425" y="154" width="55" height="17" rx="3"><title>說了沒人接 E：−0.55</title></rect><text x="419" y="166.5" text-anchor="end" class="m">−0.55</text><text x="250" y="196.5" text-anchor="end">群裡正熱鬧 q</text><rect class="neg" x="430" y="184" width="50" height="17" rx="3"><title>群裡正熱鬧 q：−0.5</title></rect><text x="424" y="196.5" text-anchor="end" class="m">−0.5</text><text x="250" y="226.5" text-anchor="end">剛做過計算 f</text><rect class="neg" x="450" y="214" width="30" height="17" rx="3"><title>剛做過計算 f：−0.3</title></rect><text x="444" y="226.5" text-anchor="end" class="m">−0.3</text><text x="250" y="256.5" text-anchor="end">近幾小時做過 Work W_s</text><rect class="neg" x="455" y="244" width="25" height="17" rx="3"><title>近幾小時做過 Work W_s：−0.25</title></rect><text x="449" y="256.5" text-anchor="end" class="m">−0.25</text><line class="ln" x1="480" y1="26" x2="480" y2="272"/></svg><figcaption>圖三　自主傾向 z 的回饋項（基準值 +0.2）。綠色讓 Yuki 更想主動，橘色讓它收斂。最重的一項是「剛做完一件事」：同一段時間裡，它不會一件接一件地自己找事做。</figcaption></figure>
+
+這些回饋項都是會隨時間衰減的痕跡。每次自主 Work 真的啟動，只留下一個「脈衝」，不管它最後發了幾則訊息：
+
+$$
+W_f(t)=\sum_{\text{work}} e^{-(t-t_w)/1800},\qquad W_s(t)=\sum_{\text{work}} e^{-(t-t_w)/21600}
+$$
+
+公開發言之後如果沒人接住，$E$ 會先慢慢上升，再在半天的時間尺度上消退；Jev 判斷後續的真人訊息是在接續、確認還是叫停，累積成 $R$：
+
+$$
+E(t)=\sum_{\text{public}}(1-\rho_w)\big(1-e^{-(t-t_p)/1200}\big)\,e^{-(t-t_p)/43200}
+$$
+
+$$
+R(t)=\tanh\Big(\sum_{\text{obs}} r_o\,e^{-(t-t_o)/21600}\Big)
+$$
+
+**群的活躍度與冷場。** 無來源的機會還要乘上兩個因子：$A$ 是這個群過去 48 小時的真人活躍度，$G$ 描述「剛安靜下來」這件事：
+
+$$
+H(t)=\sum_{\text{human}} e^{-(t-t_i)/172800},\qquad A(t)=\frac{H(t)}{H(t)+80}
+$$
+
+$$
+G(s)=\big(1-e^{-s/600}\big)\,e^{-s/64800},\qquad s=t-t_{\text{last human}}
+$$
+
+最後是機會率，以及一段時間 $\Delta t$ 內出現機會的機率：
+
+$$
+\lambda_{\text{intrinsic}}=\frac{A(t)\,G(s)\,\sigma(z)}{600},\qquad P(\text{機會}\mid\Delta t)=1-e^{-\lambda_{\text{total}}\,\Delta t}
+$$
+
+$\lambda_{\text{total}}$ 還包括有來源的機會（Jev 支持的話題、記憶、聯繫），它們各自有非負的發生率，同一輪一起競爭。
+
+<figure class="diagram"><svg viewBox="0 0 560 236" role="img" aria-label="沉默之後無來源機會率因子的變化：熱鬧的群在約 45 分鐘達到 0.79，6 小時 0.58，24 小時 0.20，48 小時 0.05；普通的群分別是 0.47、0.34、0.10、0.02。"><line class="grid" x1="48" y1="192.0" x2="540" y2="192.0"/><text x="40" y="196.0" text-anchor="end" class="m">0</text><line class="grid" x1="48" y1="150.5" x2="540" y2="150.5"/><text x="40" y="154.5" text-anchor="end" class="m">0.25</text><line class="grid" x1="48" y1="109.0" x2="540" y2="109.0"/><text x="40" y="113.0" text-anchor="end" class="m">0.5</text><line class="grid" x1="48" y1="67.5" x2="540" y2="67.5"/><text x="40" y="71.5" text-anchor="end" class="m">0.75</text><line class="grid" x1="48" y1="26.0" x2="540" y2="26.0"/><text x="40" y="30.0" text-anchor="end" class="m">1</text><text x="48.0" y="210" text-anchor="middle" class="m">0h</text><text x="109.5" y="210" text-anchor="middle" class="m">6h</text><text x="171.0" y="210" text-anchor="middle" class="m">12h</text><text x="294.0" y="210" text-anchor="middle" class="m">24h</text><text x="417.0" y="210" text-anchor="middle" class="m">36h</text><text x="540.0" y="210" text-anchor="middle" class="m">48h</text><text x="294" y="232" text-anchor="middle" class="m">距離最後一則真人訊息的時間</text><polyline class="sb" points="48.0,192.0 48.5,156.3 49.0,130.0 49.5,110.6 50.0,96.5 50.6,86.1 51.1,78.6 51.6,73.1 52.1,69.2 52.6,66.3 53.1,64.4 53.6,63.0 54.1,62.1 54.7,61.6 55.2,61.3 55.7,61.1 56.2,61.1 56.7,61.2 57.2,61.4 57.7,61.7 58.2,61.9 58.2,61.9 63.4,65.4 68.5,69.1 73.6,72.7 78.8,76.1 83.9,79.5 89.0,82.8 94.1,86.0 99.2,89.1 104.4,92.1 109.5,95.0 114.6,97.9 119.8,100.6 124.9,103.3 130.0,105.9 135.1,108.4 140.2,110.9 145.4,113.3 150.5,115.6 155.6,117.8 160.8,120.0 165.9,122.1 171.0,124.2 176.1,126.2 181.2,128.1 186.4,130.0 191.5,131.8 196.6,133.6 201.8,135.3 206.9,137.0 212.0,138.6 217.1,140.2 222.2,141.8 227.4,143.3 232.5,144.7 237.6,146.1 242.8,147.5 247.9,148.8 253.0,150.1 258.1,151.3 263.2,152.5 268.4,153.7 273.5,154.9 278.6,156.0 283.8,157.0 288.9,158.1 294.0,159.1 299.1,160.1 304.2,161.0 309.4,162.0 314.5,162.9 319.6,163.7 324.8,164.6 329.9,165.4 335.0,166.2 340.1,167.0 345.2,167.7 350.4,168.5 355.5,169.2 360.6,169.9 365.8,170.5 370.9,171.2 376.0,171.8 381.1,172.4 386.2,173.0 391.4,173.6 396.5,174.1 401.6,174.7 406.8,175.2 411.9,175.7 417.0,176.2 422.1,176.7 427.2,177.2 432.4,177.6 437.5,178.1 442.6,178.5 447.8,178.9 452.9,179.3 458.0,179.7 463.1,180.1 468.2,180.4 473.4,180.8 478.5,181.1 483.6,181.5 488.8,181.8 493.9,182.1 499.0,182.4 504.1,182.7 509.2,183.0 514.4,183.3 519.5,183.5 524.6,183.8 529.8,184.0 534.9,184.3 540.0,184.5"/><polyline class="sa" points="48.0,192.0 48.5,170.6 49.0,154.8 49.5,143.2 50.0,134.8 50.6,128.6 51.1,124.1 51.6,120.8 52.1,118.5 52.6,116.8 53.1,115.7 53.6,114.9 54.1,114.4 54.7,114.1 55.2,113.9 55.7,113.9 56.2,113.9 56.7,114.0 57.2,114.1 57.7,114.3 58.2,114.5 58.2,114.5 63.4,116.8 68.5,119.3 73.6,121.6 78.8,123.9 83.9,126.2 89.0,128.3 94.1,130.4 99.2,132.4 104.4,134.4 109.5,136.2 114.6,138.1 119.8,139.8 124.9,141.5 130.0,143.2 135.1,144.8 140.2,146.4 145.4,147.9 150.5,149.3 155.6,150.7 160.8,152.1 165.9,153.4 171.0,154.7 176.1,155.9 181.2,157.1 186.4,158.3 191.5,159.4 196.6,160.5 201.8,161.5 206.9,162.5 212.0,163.5 217.1,164.5 222.2,165.4 227.4,166.3 232.5,167.1 237.6,168.0 242.8,168.8 247.9,169.5 253.0,170.3 258.1,171.0 263.2,171.7 268.4,172.4 273.5,173.1 278.6,173.7 283.8,174.3 288.9,174.9 294.0,175.5 299.1,176.0 304.2,176.6 309.4,177.1 314.5,177.6 319.6,178.1 324.8,178.6 329.9,179.0 335.0,179.5 340.1,179.9 345.2,180.3 350.4,180.7 355.5,181.1 360.6,181.4 365.8,181.8 370.9,182.1 376.0,182.5 381.1,182.8 386.2,183.1 391.4,183.4 396.5,183.7 401.6,184.0 406.8,184.3 411.9,184.5 417.0,184.8 422.1,185.0 427.2,185.3 432.4,185.5 437.5,185.7 442.6,185.9 447.8,186.2 452.9,186.4 458.0,186.6 463.1,186.7 468.2,186.9 473.4,187.1 478.5,187.3 483.6,187.4 488.8,187.6 493.9,187.7 499.0,187.9 504.1,188.0 509.2,188.2 514.4,188.3 519.5,188.4 524.6,188.6 529.8,188.7 534.9,188.8 540.0,188.9"/><circle class="dot-b" cx="55.7" cy="61.1" r="4"><title>熱鬧的群，沉默 45 分鐘：0.79</title></circle><circle class="dot-b" cx="109.5" cy="95.0" r="4"><title>熱鬧的群，沉默 6 小時：0.58</title></circle><circle class="dot-b" cx="294.0" cy="159.1" r="4"><title>熱鬧的群，沉默 24 小時：0.20</title></circle><circle class="dot-a" cx="55.7" cy="113.9" r="4"><title>普通的群，沉默 45 分鐘：0.47</title></circle><circle class="dot-a" cx="109.5" cy="136.2" r="4"><title>普通的群，沉默 6 小時：0.34</title></circle><circle class="dot-a" cx="294.0" cy="175.5" r="4"><title>普通的群，沉默 24 小時：0.10</title></circle><text x="79" y="64">熱鬧的群 H₀ = 400</text><text x="63" y="175">普通的群 H₀ = 80</text><rect class="neg" x="400" y="4" width="14" height="4" rx="1"/><text x="418" y="10" text-anchor="start" class="m">熱鬧的群</text><rect class="pos" x="476" y="4" width="14" height="4" rx="1"/><text x="494" y="10" text-anchor="start" class="m">普通的群</text></svg><figcaption>圖四　群安靜下來之後，無來源機會率的因子 A(t)·G(s)。冷場約 45 分鐘時最高，之後隨沉默和活躍度一起衰減；從來沒人說話的群，這條線永遠是 0。</figcaption></figure>
+
+| 沉默時間 | 熱鬧的群（H₀ = 400） | 普通的群（H₀ = 80） |
+| --- | --- | --- |
+| 45 分鐘 | 0.79 | 0.47 |
+| 6 小時 | 0.58 | 0.34 |
+| 24 小時 | 0.20 | 0.10 |
+| 48 小時 | 0.05 | 0.02 |
+
+這就是我想要的形狀：熱鬧的群冷場之後，Yuki 有機會自然地接一句；沉默越久，機會越低；一個從來沒人說話的群，$H=0$，機會率就是 0。整個模型裡沒有「沉默滿幾小時」「每天最多幾次」這種硬規則。
 
 同樣要寫清楚的是限制：語義參與目前**預設關閉**；所有回放都用合成軌跡，只能證明機制，不能證明真實群聊裡的社交效果。
 
@@ -247,15 +330,8 @@ lim U_self = -0.05 < 0
 - **#156**：手帳風格的 WebUI 草稿，React + TypeScript，還在按功能域一塊一塊蓋。
 - **接下來**：Telegram 平台適配器。身份模型在 3.8.0 已經和 QQ 解綁，這會是 Yuki 第一次離開 QQ。
 
-## 回頭看
+## 最後
 
-1. **每輪都跑的中間層，最後都被刪了。** Planner、工具挑選模型、動態工具載入、聯網路由器、中文語義正則、強制收尾、自動轉發最終回覆、每輪常駐的自動化快照（#147）——它們都曾經看起來很合理，但每一層都在花錢、都會出錯。留下來的是按需的判斷（像 Jev）和後端的權限檢查：主 Agent 看到完整的情境自己決定，後端在執行那一刻守住權限。
-2. **帳本優先。** 原文只存一份，記憶、摘要、關係都是可以重算的衍生資料，所以每次重寫都有退路。
-3. **請求的形狀是不變量。** 對長期運作的 Agent，前綴穩不穩定直接等於帳單。
-4. **權限在後端，不在 prompt。** 好感度 100 也拿不到管理工具；SELF 不能借用別人的權限；來源由後端渲染。
-5. **呼叫了不等於做完了。** 接受、執行、送達分開記錄，恢復時才知道哪些可以重試、哪些絕對不能重發。
-6. **老實寫限制。** 「不宣稱」這三個字在 PR 裡出現了很多次。寫清楚之後，一個月後回頭看，才分得出哪些真的驗證過，哪些只是當時覺得應該可以。
-
-最後謝謝一起提交過程式碼的小尤和 Hilbert-beinghappy（坤坤遊戲外掛就來自 Hilbert-beinghappy），也謝謝每一個在群裡被 Yuki 打擾過、或等它開口等了很久的人。
+謝謝一起提交過程式碼的小尤和 Hilbert-beinghappy（坤坤遊戲外掛就來自 Hilbert-beinghappy），也謝謝每一個在群裡被 Yuki 打擾過、或等它開口等了很久的人。
 
 有興趣的話歡迎到 [GitHub](https://github.com/YuanYeYouTao/Yuki) 看看、開 issue 或給顆星。
