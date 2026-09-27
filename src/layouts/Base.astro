@@ -8,8 +8,10 @@ interface Props {
   title?: string;
   description?: string;
   article?: { published: Date; modified?: Date; tags?: string[] };
+  /** 不顯示站台頁首與頁尾（首頁終端機使用） */
+  bare?: boolean;
 }
-const { title, description = SITE_DESCRIPTION, article } = Astro.props;
+const { title, description = SITE_DESCRIPTION, article, bare = false } = Astro.props;
 const fullTitle = title ? `${title} · ${SITE_TITLE}` : SITE_TITLE;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
@@ -47,13 +49,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
         document.documentElement.dataset.theme = t;
       })();
     </script>
+    <slot name="head" />
   </head>
   <body>
     <a class="skip-link" href="#main">跳到主要內容</a>
-    <Header />
+    {!bare && <Header />}
     <main id="main">
       <slot />
     </main>
-    <Footer />
+    {!bare && <Footer />}
   </body>
 </html>

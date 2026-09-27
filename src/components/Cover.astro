@@ -1,0 +1,272 @@
+---
+// 首頁封面：琥珀色 ASCII 終端。點一下或按任意鍵進入正文。
+// 只有在 <html data-cover="on"> 時顯示（由首頁 head 裡的 inline script 決定），沒有 JS 時不會擋住內容。
+---
+<div class="cover" id="cover" role="dialog" aria-modal="true" aria-label="封面：點一下或按任意鍵進入">
+  <div class="frame">
+    <div class="top">
+      <span>VOID.EXECUTE(ME);</span>
+      <span><span id="cv-time">00:00.0</span> / --:--&nbsp;&nbsp;&nbsp;RUNNING</span>
+    </div>
+    <div class="rule"></div>
+    <div class="line">01 / YUANYEYOUTAO</div>
+    <div class="rule"></div>
+    <div class="line split">
+      <span>TYPE CAST / YUKI</span>
+      <button type="button" id="cv-enter" class="enter">ENTER</button>
+    </div>
+
+    <div class="stage">
+      <pre class="panel" id="cv-reg" aria-hidden="true"></pre>
+      <div class="center">
+        <div class="call">convert(self, yuki);</div>
+        <pre class="art" id="cv-art" aria-hidden="true"></pre>
+        <div class="tx">TX 0723&nbsp;&nbsp;|&nbsp;&nbsp;SELF -&gt; YOU&nbsp;&nbsp;|&nbsp;&nbsp;<span id="cv-ack">ACK</span></div>
+      </div>
+      <pre class="panel" id="cv-proc" aria-hidden="true"></pre>
+    </div>
+
+    <pre class="bar" id="cv-bar" aria-hidden="true"></pre>
+    <div class="sub">
+      <div class="en">ENTER THE VOID</div>
+      <div class="zh">仿如來自虛空</div>
+    </div>
+    <div class="hint">[ 點一下，或按任意鍵進入 ]</div>
+  </div>
+</div>
+
+<script>
+  const root = document.documentElement;
+  const cover = document.getElementById('cover')!;
+
+  if (root.dataset.cover === 'on') start();
+
+  function start() {
+    const $ = (id: string) => document.getElementById(id)!;
+    const reg = $('cv-reg'), proc = $('cv-proc'), art = $('cv-art'), bar = $('cv-bar');
+    const time = $('cv-time'), ack = $('cv-ack');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const W = 21; // 面板內寬
+    const hex = (n: number, w = 4) => n.toString(16).toUpperCase().padStart(w, '0').slice(-w);
+    const rnd = (n: number) => Math.floor(Math.random() * n);
+    const row = (s: string) => '|' + (' ' + s).padEnd(W).slice(0, W) + '|';
+    const edge = (title = '') => ('+-' + (title ? ` ${title} ` : '')).padEnd(W + 1, '-') + '+';
+
+    // ---- 左：REGISTER ----
+    let addr = 0x40;
+    const dump: string[] = [];
+    const pushDump = () => {
+      dump.push(`${hex(addr)} ${hex(rnd(65536))} ${hex(rnd(65536))}`);
+      addr = (addr + 0x10) & 0xffff;
+      if (dump.length > 20) dump.shift();
+    };
+    for (let i = 0; i < 20; i++) pushDump();
+    const drawReg = () => {
+      const lines = [edge('REGISTER'), row('PID 0001 : ME'), '|>' + 'UID 0002 : YOU'.padEnd(W - 1) + '|',
+        row('PC  0723'), row(`SP  ${hex(0x6c54 + (addr >> 4))}`)];
+      dump.forEach((d, i) => lines.push(row(i === 1 ? 'HEAP ALLOCATION' : d)));
+      lines.push(edge());
+      reg.textContent = lines.join('\n');
+    };
+
+    // ---- 右：PROCESS ----
+    const ops = ['LOAD', 'PUSH', 'CALL', 'WAIT', 'COPY', 'SYNC', 'RET ', 'JMP '];
+    let tick = 9670, cur = 0;
+    const trace: string[] = [];
+    const pushOp = () => { trace.push(`${ops[rnd(ops.length)]} @${hex(rnd(65536))}`); if (trace.length > 20) trace.shift(); };
+    for (let i = 0; i < 20; i++) pushOp();
+    const drawProc = () => {
+      const flags = ['Z', 'C', 'O', 'S'].map((f) => (Math.random() < 0.8 ? f : '.')).join(' ');
+      const lines = [edge('PROCESS'), row('STATE EXPORT'), row(`TICK ${String(tick).padStart(6, '0')}`),
+        row(`CALL ${hex(0x4e97 + (tick % 64))}`), row(`FLAGS ${flags}`)];
+      trace.forEach((t, i) => {
+        let l = row(i === 1 ? 'STACK TRACE' : t);
+        if (i === cur) l = l.slice(0, W - 1) + '<|';
+        lines.push(l);
+      });
+      lines.push(edge());
+      proc.textContent = lines.join('\n');
+    };
+
+    // ---- 中：旋轉的雪球 + 資料流 + YOU_01 ----
+    const SW = 38, SH = 19, FW = 22;
+    const ramp = ' .,:;=+*#';
+    const box = ['+--------+', '|        |', '| YOU_01 |', '|        |', '+--------+'];
+    const drawArt = (t: number) => {
+      const a = t / 2600;
+      const lx = -0.55, ly = -0.55, lz = 0.63;
+      const out: string[] = [];
+      for (let j = 0; j < SH; j++) {
+        let s = '';
+        const y = (j - SH / 2 + 0.5) / (SH / 2);
+        for (let i = 0; i < SW; i++) {
+          const x = (i - SW / 2 + 0.5) / (SW / 2);
+          const r2 = x * x + y * y;
+          if (r2 > 1) { s += ' '; continue; }
+          const z = Math.sqrt(1 - r2);
+          const lon = Math.atan2(x, z) + a, lat = Math.asin(y);
+          const tex = 0.5 + 0.5 * Math.sin(lon * 5) * Math.cos(lat * 4) + 0.25 * Math.sin(lat * 11 + lon * 3);
+          const diff = Math.max(0, x * lx + y * ly + z * lz);
+          const v = Math.min(0.999, 0.12 + diff * (0.45 + 0.55 * tex));
+          s += ramp[Math.floor(v * ramp.length)];
+        }
+        // 資料流：中間幾列往右流進方框
+        const k = j - 7;
+        let flow = ' '.repeat(FW);
+        if (k >= 0 && k < box.length) {
+          const chars = [...flow].map((_, i) => {
+            const p = (((i - Math.floor(t / 90) + k * 5) % 11) + 11) % 11;
+            return p < 2 ? '>' : k === 2 || i % 2 === 0 ? '.' : ' ';
+          });
+          flow = chars.join('');
+          s += flow + box[k];
+        } else {
+          s += flow;
+        }
+        out.push(s.replace(/\s+$/, ''));
+      }
+      art.textContent = out.join('\n');
+    };
+
+    // ---- 下：傳輸條 ----
+    const BL = 72;
+    const drawBar = (t: number) => {
+      const p = (t % 7000) / 7000;
+      const fill = Math.floor(p * BL);
+      let s = '==';
+      for (let i = 2; i < BL; i++) {
+        if (i < fill) s += '|';
+        else if (i < fill + 14) s += '=';
+        else s += (i + Math.floor(t / 400)) % 9 === 0 ? '=' : ':';
+      }
+      bar.textContent = s;
+    };
+
+    const t0 = performance.now();
+    let last = 0, slow = 0, raf = 0;
+    const frame = (now: number) => {
+      const t = now - t0;
+      if (now - last > 50) {
+        last = now;
+        drawArt(t);
+        drawBar(t);
+        const sec = t / 1000;
+        time.textContent = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${(sec % 60).toFixed(1).padStart(4, '0')}`;
+        if (now - slow > 260) {
+          slow = now;
+          pushDump(); drawReg();
+          pushOp(); tick += 1 + rnd(9); cur = (cur + 1) % 20; drawProc();
+          ack.textContent = Math.random() < 0.85 ? 'ACK' : 'SYN';
+        }
+      }
+      raf = requestAnimationFrame(frame);
+    };
+    drawReg(); drawProc(); drawArt(0); drawBar(0);
+    if (!reduce) raf = requestAnimationFrame(frame);
+
+    // ---- 進入 ----
+    let leaving = false;
+    const enter = () => {
+      if (leaving) return;
+      leaving = true;
+      cover.classList.add('off');
+      try { sessionStorage.setItem('void-entered', '1'); } catch (e) {}
+      setTimeout(() => {
+        cancelAnimationFrame(raf);
+        root.dataset.cover = 'off';
+        removeEventListener('keydown', onKey);
+        window.dispatchEvent(new CustomEvent('cover:exit'));
+      }, reduce ? 0 : 560);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (['Shift', 'Control', 'Alt', 'Meta', 'Tab'].includes(e.key)) return;
+      e.preventDefault();
+      enter();
+    };
+    cover.addEventListener('click', enter);
+    addEventListener('keydown', onKey);
+    document.getElementById('cv-enter')!.focus({ preventScroll: true });
+  }
+</script>
+
+<style>
+  .cover {
+    --amber: #ffb000;
+    --amber-dim: rgba(255, 176, 0, 0.42);
+    --amber-faint: rgba(255, 176, 0, 0.2);
+    display: none;
+    position: fixed; inset: 0; z-index: 100;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+    background: radial-gradient(ellipse at center, #15100a 0%, #070504 75%);
+    color: var(--amber);
+    font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+    cursor: pointer;
+    font-variant-ligatures: none;
+    text-shadow: 0 0 6px rgba(255, 150, 0, 0.55);
+  }
+  :global(html[data-cover='on']) .cover { display: grid; }
+  :global(html[data-cover='on']) body { overflow: hidden; }
+
+  .frame {
+    position: relative; display: flex; flex-direction: column; gap: 6px;
+    width: min(1180px, 100%); max-height: 100%; margin: auto; overflow: hidden;
+    padding: clamp(14px, 2.4vw, 30px) clamp(14px, 3vw, 40px);
+    border: 1px solid var(--amber-faint); border-radius: 22px;
+    background: #0b0806;
+    box-shadow: 0 0 0 1px #000, 0 30px 80px rgba(0, 0, 0, 0.6), inset 0 0 120px rgba(0, 0, 0, 0.9);
+    font-size: clamp(10px, 1.05vw, 13px); letter-spacing: 0.06em; line-height: 1.5;
+    animation: flicker 5s infinite steps(1);
+  }
+  /* 掃描線 */
+  .frame::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+    mix-blend-mode: multiply;
+  }
+  .top, .split { display: flex; justify-content: space-between; gap: 12px; }
+  .rule { border-top: 1px dashed var(--amber-dim); }
+  .line { padding: 2px 0; }
+  .enter {
+    font: inherit; color: inherit; letter-spacing: inherit; text-shadow: inherit;
+    background: none; border: 0; padding: 0 2px; cursor: pointer;
+  }
+  .enter:focus-visible { outline: 1px dashed var(--amber); outline-offset: 3px; }
+
+  .stage {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: clamp(8px, 2vw, 28px);
+    margin-top: 6px; min-height: 0;
+  }
+  pre { margin: 0; font: inherit; line-height: 1.28; white-space: pre; }
+  .panel { color: var(--amber-dim); font-size: 0.92em; }
+  .center { display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 0; }
+  .call { letter-spacing: 0.04em; }
+  .art { font-size: 1em; line-height: 1.12; letter-spacing: 0; }
+  .tx { color: var(--amber); letter-spacing: 0.1em; }
+  .bar { text-align: center; color: var(--amber-dim); letter-spacing: 0; overflow: hidden; margin-top: 8px; }
+  .sub { text-align: center; color: #f4e7c9; text-shadow: 0 1px 0 #000, 0 0 12px rgba(0, 0, 0, 0.9); margin-top: 4px; }
+  .sub .en { font-size: 1.45em; letter-spacing: 0.12em; }
+  .sub .zh { font-family: 'Noto Sans TC', sans-serif; font-size: 1.3em; letter-spacing: 0.3em; margin-top: 2px; }
+  .hint { text-align: center; color: var(--amber-dim); animation: blink 1.4s steps(2) infinite; }
+
+  /* 進入：CRT 關機 */
+  .cover.off .frame { animation: crt-off 0.55s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
+  .cover.off { transition: background 0.5s 0.1s; background: #000; }
+
+  @keyframes blink { 50% { opacity: 0.2; } }
+  @keyframes flicker { 0%, 100% { opacity: 1; } 47% { opacity: 0.94; } 48% { opacity: 1; } 82% { opacity: 0.97; } }
+  @keyframes crt-off {
+    0% { transform: scale(1, 1); filter: brightness(1); }
+    45% { transform: scale(1, 0.006); filter: brightness(3); }
+    100% { transform: scale(0, 0.006); filter: brightness(6); opacity: 0; }
+  }
+
+  @media (max-width: 900px) {
+    .stage { grid-template-columns: 1fr; }
+    .panel { display: none; }
+    .art { font-size: clamp(6px, 1.75vw, 12px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .frame, .hint { animation: none; }
+    .cover.off .frame { animation: none; opacity: 0; }
+  }
+</style>
