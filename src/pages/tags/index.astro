@@ -1,0 +1,26 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getPosts, getTags, tagHref } from '../../utils';
+const tags = getTags(await getPosts());
+---
+<Base title="標籤" description="依主題瀏覽 YuanYeYouTao 的文章">
+  <section class="container head">
+    <h1>標籤</h1>
+    <p>依主題瀏覽文章。</p>
+  </section>
+  <section class="container">
+    <ul class="cloud">
+      {tags.map(([tag, count]) => (
+        <li><a class="tag" href={tagHref(tag)}>{tag}<span>{count}</span></a></li>
+      ))}
+    </ul>
+  </section>
+</Base>
+<style>
+  .head { padding: 64px 0 28px; }
+  h1 { font-size: 2.4rem; margin: 0 0 8px; }
+  .head p { color: var(--muted); margin: 0; }
+  .cloud { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  .cloud .tag { font-size: 0.95rem; padding: 8px 14px; }
+  .cloud span { margin-left: 8px; opacity: 0.7; font-variant-numeric: tabular-nums; }
+</style>

@@ -1,7 +1,7 @@
 ---
 import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
-import { getPosts } from '../../utils';
+import { getPosts, readingMinutes, tagHref } from '../../utils';
 
 export async function getStaticPaths() {
   const posts = await getPosts();
@@ -12,10 +12,16 @@ export async function getStaticPaths() {
 }
 
 const { post, prev, next } = Astro.props;
-const { Content } = await render(post);
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const minutes = readingMinutes(post.body);
 const fmt = (d: Date) => d.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
-<Base title={post.data.title} description={post.data.description}>
+<Base
+  title={post.data.title}
+  description={post.data.description}
+  article={{ published: post.data.pubDate, modified: post.data.updatedDate, tags: post.data.tags }}
+>
   <article class="container">
     <header>
       <a class="back" href="/blog/">← 所有文章</a>
@@ -23,22 +29,76 @@ const fmt = (d: Date) => d.toLocaleDateString('zh-TW', { year: 'numeric', month:
       <div class="meta">
         <time datetime={post.data.pubDate.toISOString()}>{fmt(post.data.pubDate)}</time>
         {post.data.updatedDate && <span>· 更新於 {fmt(post.data.updatedDate)}</span>}
-        {post.data.tags.map((t) => <span class="tag">{t}</span>)}
+        <span>· 約 {minutes} 分鐘</span>
+        {post.data.tags.map((t) => <a class="tag" href={tagHref(t)}>{t}</a>)}
       </div>
     </header>
+    {toc.length >= 3 && (
+      <details class="toc" open>
+        <summary>目錄</summary>
+        <ol>
+          {toc.map((h) => (
+            <li class={`d${h.depth}`}><a href={`#${h.slug}`}>{h.text}</a></li>
+          ))}
+        </ol>
+      </details>
+    )}
     <div class="prose">
       <Content />
     </div>
-    <nav class="pager">
-      {prev ? <a href={`/blog/${prev.id}/`}>← {prev.data.title}</a> : <span></span>}
-      {next ? <a href={`/blog/${next.id}/`}>{next.data.title} →</a> : <span></span>}
+    <nav class="pager" aria-label="上一篇與下一篇">
+      {prev ? <a href={`/blog/${prev.id}/`}><small>上一篇</small>{prev.data.title}</a> : <span></span>}
+      {next ? <a class="next" href={`/blog/${next.id}/`}><small>下一篇</small>{next.data.title}</a> : <span></span>}
     </nav>
   </article>
 </Base>
+
+<script>
+  for (const pre of document.querySelectorAll<HTMLPreElement>('.prose pre')) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy';
+    btn.textContent = '複製';
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(pre.querySelector('code')?.innerText ?? pre.innerText);
+        btn.textContent = '已複製';
+      } catch {
+        btn.textContent = '複製失敗';
+      }
+      setTimeout(() => (btn.textContent = '複製'), 1500);
+    });
+    const wrap = document.createElement('div');
+    wrap.className = 'code-wrap';
+    pre.replaceWith(wrap);
+    wrap.append(pre, btn);
+  }
+</script>
+
 <style>
   header { padding: 56px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
   .back { font-size: 0.9rem; color: var(--muted); }
   h1 { font-size: clamp(1.8rem, 5vw, 2.4rem); margin: 12px 0 14px; }
   .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--muted); font-size: 0.92rem; padding-bottom: 20px; }
-  .pager { display: flex; justify-content: space-between; gap: 16px; margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 0.95rem; }
+  .meta .tag:hover { text-decoration: none; filter: brightness(0.95); }
+
+  .toc {
+    margin: 28px 0 8px; padding: 14px 20px; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--bg-soft); font-size: 0.95rem;
+  }
+  .toc summary { cursor: pointer; font-weight: 500; color: var(--muted); }
+  .toc ol { list-style: none; margin: 10px 0 2px; padding: 0; }
+  .toc li { margin: 4px 0; line-height: 1.6; }
+  .toc li.d3 { padding-left: 1.2em; font-size: 0.92rem; }
+  .toc a { color: var(--text); }
+  .toc a:hover { color: var(--accent); }
+
+  .pager { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 0.95rem; }
+  .pager a { display: flex; flex-direction: column; gap: 2px; line-height: 1.5; }
+  .pager a.next { text-align: right; grid-column: 2; }
+  .pager small { color: var(--muted); font-size: 0.8rem; }
+  @media (max-width: 560px) {
+    .pager { grid-template-columns: 1fr; }
+    .pager a.next { grid-column: 1; }
+  }
 </style>
