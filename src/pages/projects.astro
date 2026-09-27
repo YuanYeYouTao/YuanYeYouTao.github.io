@@ -1,0 +1,21 @@
+---
+import Base from '../layouts/Base.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { projects } from '../data/projects';
+import { GITHUB } from '../consts';
+---
+<Base title="專案" description="YuanYeYouTao 的開源專案">
+  <section class="container wide head">
+    <h1>專案</h1>
+    <p>我寫過、正在寫、或參與過的東西。更多請看 <a href={GITHUB}>GitHub</a>。</p>
+  </section>
+  <section class="container wide grid">
+    {projects.map((p) => <ProjectCard project={p} />)}
+  </section>
+</Base>
+<style>
+  .head { padding: 64px 0 28px; }
+  h1 { font-size: 2.4rem; margin: 0 0 8px; }
+  .head p { color: var(--muted); margin: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 18px; }
+</style>

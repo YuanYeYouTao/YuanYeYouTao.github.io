@@ -1,0 +1,21 @@
+---
+import { GITHUB, EMAIL } from '../consts';
+const year = new Date().getFullYear();
+---
+<footer>
+  <div class="container wide">
+    <span>© {year} YuanYeYouTao</span>
+    <span class="links">
+      <a href={GITHUB}>GitHub</a>
+      <a href={`mailto:${EMAIL}`}>Email</a>
+      <a href="/rss.xml">RSS</a>
+    </span>
+  </div>
+</footer>
+<style>
+  footer { margin-top: 96px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
+  div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 28px 0 40px; }
+  .links { display: flex; gap: 18px; }
+  a { color: var(--muted); }
+  a:hover { color: var(--accent); }
+</style>

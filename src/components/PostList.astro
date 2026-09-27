@@ -1,0 +1,31 @@
+---
+import type { CollectionEntry } from 'astro:content';
+interface Props { posts: CollectionEntry<'blog'>[]; }
+const { posts } = Astro.props;
+const fmt = (d: Date) => d.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+---
+<ul>
+  {posts.map((post) => (
+    <li>
+      <a href={`/blog/${post.id}/`}>
+        <time datetime={post.data.pubDate.toISOString()}>{fmt(post.data.pubDate)}</time>
+        <div>
+          <h3>{post.data.title}</h3>
+          <p>{post.data.description}</p>
+        </div>
+      </a>
+    </li>
+  ))}
+</ul>
+<style>
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { border-bottom: 1px solid var(--line); }
+  li:first-child { border-top: 1px solid var(--line); }
+  a { display: grid; grid-template-columns: 110px 1fr; gap: 16px; padding: 20px 4px; color: var(--text); }
+  a:hover { text-decoration: none; }
+  a:hover h3 { color: var(--accent); }
+  time { color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; padding-top: 3px; }
+  h3 { margin: 0 0 4px; font-size: 1.15rem; transition: color 0.15s; }
+  p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+  @media (max-width: 560px) { a { grid-template-columns: 1fr; gap: 4px; } }
+</style>

@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="找不到頁面">
+  <section class="container">
+    <h1>404</h1>
+    <p>這個頁面不存在，可能被搬走了。</p>
+    <p><a href="/">← 回到首頁</a></p>
+  </section>
+</Base>
+<style>
+  section { padding: 96px 0; text-align: center; }
+  h1 { font-size: 4rem; margin: 0; color: var(--accent); }
+  p { color: var(--muted); }
+</style>

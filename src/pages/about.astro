@@ -1,0 +1,39 @@
+---
+import Base from '../layouts/Base.astro';
+import { GITHUB, EMAIL } from '../consts';
+---
+<Base title="關於" description="關於 YuanYeYouTao">
+  <article class="container prose">
+    <h1>關於我</h1>
+    <p>
+      嗨，我是 <strong>YuanYeYouTao</strong>，一個喜歡做 AI Agent 和開發者工具的學生開發者。
+    </p>
+    <p>
+      我最主要的專案是 <a href="https://github.com/YuanYeYouTao/Yuki">Yuki</a>——一個開源、自託管、
+      住在 QQ 群聊裡的社交 AI Agent。它有自己的身份、長期記憶和人際關係，能跨訊息、跨對話地把事情做完。
+      我同時也是 <a href="https://github.com/YuanYeYouTao/seektty">SeekTTY</a> 的核心開發者，
+      那是一個給 DeepSeek Harness 用的終端工作區。
+    </p>
+
+    <h2>我在意的事</h2>
+    <ul>
+      <li><strong>持久的社交 Agent</strong>：AI 不只是回一句話，而是長期「在場」。</li>
+      <li><strong>長期記憶</strong>：記得發生過什麼，也記得是跟誰。</li>
+      <li><strong>MCP 與工具生態</strong>：讓模型能安全地接上真實世界。</li>
+      <li><strong>終端介面與開發者體驗</strong>：好用的工具應該讓人感覺不到它的存在。</li>
+    </ul>
+
+    <h2>常用技術</h2>
+    <p>Python · TypeScript · Node.js · Vue · Docker · NoneBot2 · MCP</p>
+
+    <h2>聯絡</h2>
+    <ul>
+      <li>GitHub：<a href={GITHUB}>@YuanYeYouTao</a></li>
+      <li>Email：<a href={`mailto:${EMAIL}`}>{EMAIL}</a></li>
+    </ul>
+  </article>
+</Base>
+<style>
+  article { padding-top: 64px; }
+  h1 { font-size: 2.4rem; }
+</style>
